@@ -1,0 +1,108 @@
+---
+title: "Mapa de índice de construcción (NBDI) en la Gran Área Metropolitana"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+#-------------------- Paquetes --------------------
+
+library(flexdashboard)
+library(dplyr)
+library(sf)
+library(leaflet)
+library(leafem)
+library(esri2sf)
+library(raster)
+
+#--------------- URL de geoservicios --------------
+
+url_agfs_limite_gam <-
+  "https://services9.arcgis.com/RrvMEynxDB8hycVO/arcgis/rest/services/gam_limite_gam/FeatureServer/0"
+
+url_raster_nbdi <-
+  "https://raw.githubusercontent.com/atlas-servicios-ecosistemicos-gam/datos-calentamiento-urbano/master/gam/NBDI_GAM_WEB.TIF"
+
+#--------------- Objetos sf y raster ---------------
+
+# Límite de la GAM
+sf_limite_gam <-
+  esri2sf(url_agfs_limite_gam)
+
+# Límite de la GAM (reproyectado a Web Mercator)
+sf_limite_gam_web <- 
+  sf_limite_gam %>%
+  st_transform(3857)
+
+# Capa raster de NDBI (en Web Mercator)
+raster_nbdi <-
+  raster(url_raster_nbdi) %>%
+  aggregate(fact=2, fun=modal) %>% # ¡¡HAY QUE TRATAR DE ELIMINAR ESTA AGRUPACIÓN. PODRÍA FUNCIONAR AL USAR MÁS MEMORIA LINUX!!  
+  crop(sf_limite_gam_web) %>%
+  mask(sf_limite_gam_web)
+
+#---------------- Paletas de colores ---------------
+
+# NBDI
+colores_nbdi <- "Greys"
+pal_nbdi <- 
+  colorNumeric(
+    colores_nbdi, 
+    values(raster_nbdi),
+    na.color = "transparent"
+  )
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+
+leaflet() %>%
+  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "OpenStreetMap") %>%  
+  addProviderTiles(providers$CartoDB.DarkMatter, group = "CartoDB Dark Matter") %>%
+  addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Imágenes de ESRI") %>%
+  addPolygons(
+    data = sf_limite_gam,
+    color = "Purple",
+    fillColor = "transparent",
+    stroke = TRUE,
+    weight = 6.0,
+    group = "Límite de la GAM"
+  ) %>%
+  addRasterImage(
+    raster_nbdi, 
+    colors = pal_nbdi,
+    opacity = 0.9,
+    group = "NBDI"
+  ) %>%  
+  addLegend(
+    title = "NBDI",
+    values = values(raster_nbdi),
+    pal = pal_nbdi,
+    position = "bottomright",
+    group = "NBDI"
+  ) %>%    
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "CartoDB Dark Matter", "Stamen Toner Lite", "Imágenes de ESRI"),
+    overlayGroups = c("Límite de la GAM", "NBDI"),
+    options = layersControlOptions(collapsed = TRUE)    
+  ) %>%  
+  addMiniMap(
+    toggleDisplay = TRUE,
+    position = "bottomleft",
+    tiles = providers$OpenStreetMap.Mapnik
+  ) %>%
+  addScaleBar(
+    position = "bottomleft",
+    options = scaleBarOptions(imperial = FALSE)
+  ) %>%
+  addMouseCoordinates()
+
+```
