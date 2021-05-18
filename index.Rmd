@@ -13,6 +13,8 @@ library(flexdashboard)
 library(dplyr)
 library(sf)
 library(leaflet)
+library(leaflet.extras)
+library(leaflet.opacity)
 library(leafem)
 library(esri2sf)
 library(raster)
@@ -78,6 +80,7 @@ leaflet() %>%
   ) %>%
   addRasterImage(
     raster_ndbi, 
+    layerId = "raster",    
     colors = pal_ndbi,
     opacity = 0.9,
     group = "NDBI"
@@ -103,6 +106,8 @@ leaflet() %>%
     position = "bottomleft",
     options = scaleBarOptions(imperial = FALSE)
   ) %>%
-  addMouseCoordinates()
-
+  addMouseCoordinates() %>%
+  addSearchOSM() %>%
+  addResetMapButton() %>%
+  addOpacitySlider(layerId = "raster")
 ```
