@@ -1,5 +1,5 @@
 ---
-title: "Mapa de índice de construcción (NDBI) de la Gran Área Metropolitana"
+title: "Mapa del índice de diferencia normalizada de edificación (NDBI) de la Gran Área Metropolitana"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -45,6 +45,11 @@ raster_ndbi <-
   crop(sf_limite_gam_web) %>%
   mask(sf_limite_gam_web)
 
+raster_ndbi[raster_ndbi==65535] <- NA
+min_raster_ndbi <- format(cellStats(raster_ndbi, stat='min'), digits=2, nsmall=1)
+max_raster_ndbi <- format(cellStats(raster_ndbi, stat='max'), digits=2, nsmall=1)
+mean_raster_ndbi <- format(cellStats(raster_ndbi, stat='mean'), digits=2, nsmall=1)
+
 #---------------- Paletas de colores ---------------
 
 # NDBI
@@ -58,7 +63,7 @@ pal_ndbi <-
 
 ```
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ### 
@@ -110,4 +115,31 @@ leaflet() %>%
   addSearchOSM() %>%
   addResetMapButton() %>%
   addOpacitySlider(layerId = "raster")
+```
+
+Row {data-height=200}
+-----------------------------------------------------------------------
+
+### NDBI mínimo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI mínimo", 
+  caption = paste("<h2><strong>", min_raster_ndbi,  "</strong></h2>")
+)
+```
+
+### NDBI máximo {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI máximo", 
+  caption = paste("<h2><strong>", max_raster_ndbi,  "</strong></h2>")
+)
+```
+
+### NDBI promedio {.value-box} {data-width=333}
+```{r}
+valueBox(
+  value = "NDBI promedio", 
+  caption = paste("<h2><strong>", mean_raster_ndbi,  "</strong></h2>")
+)
 ```
